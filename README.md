@@ -1,10 +1,10 @@
-# prototir
+# @prototir/cli
 
 Publish what you (or your AI) built to [Prototir](https://prototir.com), where people try working
 prototypes and you see real sessions, drop-off and feedback.
 
 ```sh
-npx prototir publish ./dist
+npx @prototir/cli publish ./dist
 ```
 
 It finds the build, uploads it to your account and prints a link where you finish publishing:
@@ -22,7 +22,7 @@ Assistants that run terminal commands (Claude Code, Codex, Cursor and others) ca
 make them do it without asking, add this to your `AGENTS.md` or `CLAUDE.md`:
 
 ```
-To publish or share what we build, run: npx prototir publish <build folder>
+To publish or share what we build, run: npx @prototir/cli publish <build folder>
 It prints a link where I finish publishing on Prototir.
 ```
 
@@ -31,18 +31,21 @@ For chat apps and assistants that use MCP, add it as a server:
 ```json
 {
   "mcpServers": {
-    "prototir": { "command": "npx", "args": ["-y", "prototir", "mcp"] }
+    "prototir": { "command": "npx", "args": ["-y", "@prototir/cli", "mcp"] }
   }
 }
 ```
 
 ```sh
-claude mcp add prototir -- npx -y prototir mcp
+claude mcp add prototir -- npx -y @prototir/cli mcp
 ```
 
 The server offers `prototir_publish`, `prototir_link`, `prototir_whoami` and `prototir_unlink`.
 
 ## Commands
+
+Run them with `npx @prototir/cli <command>`, or install it (`npm i -g @prototir/cli`) and use
+`prototir <command>`.
 
 | Command | |
 | --- | --- |

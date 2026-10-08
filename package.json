@@ -1,5 +1,5 @@
 {
-	"name": "prototir",
+	"name": "@prototir/cli",
 	"version": "0.1.0",
 	"description": "Publish what you (or your AI) built to Prototir: a command line and an MCP server that upload a web or native build and hand you the link to finish publishing.",
 	"license": "MIT",
@@ -30,6 +30,9 @@
 		"README.md",
 		"LICENSE.md"
 	],
+	"publishConfig": {
+		"access": "public"
+	},
 	"engines": {
 		"node": ">=18.17"
 	},

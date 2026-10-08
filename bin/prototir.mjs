@@ -10,11 +10,11 @@ import { currentLink, link, publish, linkLabel, megabytes, PLATFORMS, ARCHITECTU
 const HELP = `prototir: publish what you (or your AI) built to Prototir
 
 Usage
-  npx prototir publish [folder|file.zip]   Upload a build and get the link to finish publishing
-  npx prototir link                        Link this computer to your Prototir account
-  npx prototir whoami                      Show which account this computer is linked to
-  npx prototir unlink                      Forget this computer's link
-  npx prototir mcp                         Run as an MCP server for AI assistants
+  npx @prototir/cli publish [folder|file.zip]   Upload a build and get the link to finish publishing
+  npx @prototir/cli link                        Link this computer to your Prototir account
+  npx @prototir/cli whoami                      Show which account this computer is linked to
+  npx @prototir/cli unlink                      Forget this computer's link
+  npx @prototir/cli mcp                         Run as an MCP server for AI assistants
 
 Publish options
   --title <text>        Title to start a new prototype with
@@ -64,7 +64,7 @@ try {
 			break;
 		case 'whoami': {
 			const linked = await currentLink(where.api);
-			console.log(linked ? `Linked to Prototir as ${linked.displayName}.` : 'Not linked. Run: npx prototir link');
+			console.log(linked ? `Linked to Prototir as ${linked.displayName}.` : 'Not linked. Run: npx @prototir/cli link');
 			break;
 		}
 		case 'unlink':

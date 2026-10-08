@@ -8,7 +8,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod';
 import { startLink, waitForLink } from './api.mjs';
 import { saveLink, forgetLink } from './config.mjs';
-import { currentLink, publish, linkLabel, megabytes, PLATFORMS, ARCHITECTURES } from './publish.mjs';
+import { currentLink, publish, linkLabel, size, PLATFORMS, ARCHITECTURES } from './publish.mjs';
 
 const INSTRUCTIONS = `Prototir (prototir.com) is where people publish working prototypes (web apps, games, tools) and get real players, sessions and feedback.
 Use these tools when the user wants to publish, share, host or playtest something they built.
@@ -19,7 +19,7 @@ Use these tools when the user wants to publish, share, host or playtest somethin
 const text = (value) => ({ content: [{ type: 'text', text: value }] });
 
 export async function runMcpServer(where) {
-	const server = new McpServer({ name: 'prototir', version: '0.1.0' }, { instructions: INSTRUCTIONS });
+	const server = new McpServer({ name: 'prototir', version: '0.1.1' }, { instructions: INSTRUCTIONS });
 	/** The link waiting for approval, if any: { code, verificationUrl, done, error }. */
 	let pending = null;
 
@@ -108,7 +108,7 @@ export async function runMcpServer(where) {
 			try {
 				const result = await publish(where, linked, args.path, args);
 				return text(
-					`Uploaded ${result.name} (${megabytes(result.bytes)} MB, from ${result.root}) to ${linked.displayName}'s Prototir account. ` +
+					`Uploaded ${result.name} (${size(result.bytes)}, from ${result.root}) to ${linked.displayName}'s Prototir account. ` +
 						`It is not public yet. Give the user this link to finish publishing: ${result.url}`,
 				);
 			} catch (error) {

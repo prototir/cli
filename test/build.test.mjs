@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import yauzl from 'yauzl';
 import { prepareBuild, findWebRoot, BuildError } from '../src/build.mjs';
-import { finishUrl } from '../src/publish.mjs';
+import { finishUrl, size } from '../src/publish.mjs';
 
 async function project(files) {
 	const root = await mkdtemp(join(tmpdir(), 'prototir-test-'));
@@ -82,4 +82,10 @@ test('a web ZIP must have index.html at its top or inside one folder', async () 
 test('the finish link points at the prototype, or at the upload page for a new one', () => {
 	assert.equal(finishUrl('https://prototir.com', { slug: 'my-game' }), 'https://prototir.com/dashboard/my-game/edit#builds');
 	assert.equal(finishUrl('https://prototir.com', { title: 'Tiny Knight' }), 'https://prototir.com/dashboard/upload?title=Tiny%20Knight');
+});
+
+test('sizes read in KB below a megabyte', () => {
+	assert.equal(size(300), '1 KB');
+	assert.equal(size(51200), '50 KB');
+	assert.equal(size(5 * 1048576), '5 MB');
 });

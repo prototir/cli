@@ -55,7 +55,7 @@ export async function publish(servers, linkInfo, input, options = {}, { onStage,
 	onStage?.('Preparing the build');
 	const build = await prepareBuild(input, { kind });
 	try {
-		onStage?.(`Uploading ${build.name} (${megabytes(build.size)} MB)`);
+		onStage?.(`Uploading ${build.name} (${size(build.size)})`);
 		const registered = await uploadBuild(
 			servers.api,
 			linkInfo.token,
@@ -84,4 +84,9 @@ export async function publish(servers, linkInfo, input, options = {}, { onStage,
 
 export function megabytes(bytes) {
 	return Math.round((bytes / 1048576) * 10) / 10;
+}
+
+/** A size people can read: KB below a megabyte, so a small web build does not show as 0 MB. */
+export function size(bytes) {
+	return bytes < 1048576 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${megabytes(bytes)} MB`;
 }

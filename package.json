@@ -1,6 +1,6 @@
 {
 	"name": "@prototir/cli",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "Publish what you (or your AI) built to Prototir: a command line and an MCP server that upload a web or native build and hand you the link to finish publishing.",
 	"license": "MIT",
 	"homepage": "https://prototir.com/docs/publish-with-ai",

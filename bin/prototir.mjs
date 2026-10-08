@@ -5,7 +5,7 @@ import { parseArgs } from 'node:util';
 import { spawn } from 'node:child_process';
 import { servers } from '../src/config.mjs';
 import { forgetLink } from '../src/config.mjs';
-import { currentLink, link, publish, linkLabel, megabytes, PLATFORMS, ARCHITECTURES } from '../src/publish.mjs';
+import { currentLink, link, publish, linkLabel, size, PLATFORMS, ARCHITECTURES } from '../src/publish.mjs';
 
 const HELP = `prototir: publish what you (or your AI) built to Prototir
 
@@ -117,7 +117,7 @@ async function runPublish(input) {
 		},
 		{
 			onStage: (stage) => console.log(stage),
-			onProgress: (sent, total) => process.stdout.write(`\r  ${megabytes(sent)} of ${megabytes(total)} MB`),
+			onProgress: (sent, total) => process.stdout.write(`\r  ${size(sent)} of ${size(total)}`),
 		},
 	);
 	console.log(`\n\nUploaded from ${result.root}. Finish publishing here:\n\n  ${result.url}\n`);

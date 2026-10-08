@@ -54,6 +54,9 @@ export async function pollLink(api, code) {
 	const result = await call(api, 'POST', '/editor/pair/poll', { body: { code } });
 	if (result.status === 202) return { pending: true, intervalSeconds: result.data?.intervalSeconds ?? 5 };
 	if (result.status === 200) return result.data;
+	// The API's own wording speaks to editors; here the way out is simply to run the command again.
+	if (result.status === 410)
+		throw new PrototirError('The code expired or was already used. Run the command again to get a new one.', 410);
 	throw fail(result, 'The link was not approved');
 }
 
@@ -68,7 +71,7 @@ export async function waitForLink(api, start, { onWait } = {}) {
 		interval = result.intervalSeconds ?? interval;
 		onWait?.();
 	}
-	throw new PrototirError('The code expired before it was approved. Start again.', 410);
+	throw new PrototirError('The code expired before it was approved. Run the command again to get a new one.', 410);
 }
 
 /** Who this computer is linked as, or null if the token no longer works. */

@@ -14,12 +14,16 @@ const INSTRUCTIONS = `Prototir (prototir.com) is where people publish working pr
 Use these tools when the user wants to publish, share, host or playtest something they built.
 1. prototir_publish uploads a build. A web build is a folder (or .zip) with index.html at its top; for a project, build it first and pass the output folder (dist/, build/ or out/ is found automatically).
 2. If this computer is not linked yet, call prototir_link, show the user the code and link, and ask them to approve it; then call prototir_publish again.
-3. Nothing becomes public by itself: always give the user the returned link, where they choose the title, visibility and rights, and press Publish.`;
+3. Nothing becomes public by itself: always give the user the returned link, where they choose the title, visibility and rights, and press Publish.
+Prototypes run in a sandbox. Before publishing, make sure the build follows it:
+- Libraries: import them from cdn.jsdelivr.net/npm/, unpkg.com, esm.sh or cdnjs.cloudflare.com with an exact version (three@0.172.0, never @latest or no version). The upload checks and copies them into the build; versions published in the last 7 days are refused. Scripts from any other site are blocked.
+- Other sites: any API, image or WebSocket host the build talks to must be listed in prototir.json, e.g. "network": ["api.example.com", "*.supabase.co"] (https/wss, up to 10). Everything else is blocked.
+- Devices: camera, microphone, geolocation, clipboard (copy only) or midi go in prototir.json "permissions"; players are asked first.`;
 
 const text = (value) => ({ content: [{ type: 'text', text: value }] });
 
 export async function runMcpServer(where) {
-	const server = new McpServer({ name: 'prototir', version: '0.1.1' }, { instructions: INSTRUCTIONS });
+	const server = new McpServer({ name: 'prototir', version: '0.1.2' }, { instructions: INSTRUCTIONS });
 	/** The link waiting for approval, if any: { code, verificationUrl, done, error }. */
 	let pending = null;
 

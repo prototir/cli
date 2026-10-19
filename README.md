@@ -71,6 +71,21 @@ A folder or ZIP with `index.html` at its top. Given a project folder, `publish` 
 `build/`, `out/`, `public/` or `www/` folder when that is where `index.html` is, and refuses
 plain source code with a hint to build it first. `node_modules` and `.git` are never uploaded.
 
+## What runs in the sandbox
+
+Published web builds run in an isolated sandbox. Three things to know before publishing:
+
+- **Libraries.** Import them from `cdn.jsdelivr.net/npm/`, `unpkg.com`, `esm.sh` or
+  `cdnjs.cloudflare.com` with an exact version, such as
+  `https://cdn.jsdelivr.net/npm/three@0.172.0/build/three.module.js`. The upload checks each
+  version (at least a week old, no known malware) and copies it into the build. `@latest` or a
+  missing version is refused, and scripts from any other site are blocked.
+- **Other sites.** List every API, image or WebSocket host the build talks to in
+  `prototir.json`, for example `"network": ["api.example.com", "*.supabase.co"]` (https or wss,
+  up to 10). Players see the list, and everything else is blocked.
+- **Devices.** Add `camera`, `microphone`, `geolocation`, `clipboard` (copy only) or `midi` to
+  `"permissions"`. Players are asked before the prototype can use them.
+
 ## Where things are kept
 
 The link token is saved in `~/.prototir/credentials.json`, one per Prototir server. Set

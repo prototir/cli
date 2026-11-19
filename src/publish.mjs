@@ -2,7 +2,7 @@
 import { hostname } from 'node:os';
 import { startLink, waitForLink, whoami, uploadBuild, PrototirError } from './api.mjs';
 import { prepareBuild } from './build.mjs';
-import { envToken, loadLink, saveLink } from './config.mjs';
+import { envToken, isCi, loadLink, saveLink } from './config.mjs';
 
 export const PLATFORMS = ['windows', 'macos', 'linux'];
 export const ARCHITECTURES = ['x64', 'arm64', 'universal'];
@@ -81,6 +81,8 @@ export async function publish(servers, linkInfo, input, options = {}, { onStage,
 			linkInfo.token,
 			{ path: build.zipPath, name: build.name, size: build.size },
 			{
+				// Studio says where a waiting build came from: a pipeline, or someone's machine.
+				engine: isCi() ? 'ci' : 'cli',
 				kind,
 				platform: kind === 'native' ? options.platform : null,
 				architecture: kind === 'native' ? options.architecture : null,

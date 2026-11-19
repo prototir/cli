@@ -108,6 +108,7 @@ test('in GitHub Actions a token uploads to the slug and fills outputs and summar
 		assert.equal(fake.seen.registered.slug, 'mine');
 		assert.equal(fake.seen.registered.versionLabel, 'build 7');
 		assert.equal(fake.seen.registered.kind, 'web');
+		assert.equal(fake.seen.registered.engine, 'ci', 'Studio can tell a pipeline upload apart');
 		assert.equal(fake.seen.paired, false, 'never asks for a code');
 		assert.doesNotMatch(result.stdout, /\r/, 'no carriage-return progress in logs');
 
@@ -115,6 +116,25 @@ test('in GitHub Actions a token uploads to the slug and fills outputs and summar
 		assert.match(outputs, /^url=https:\/\/prototir\.test\/dashboard\/mine\/edit#builds$/m);
 		assert.match(outputs, /^for-prototype=true$/m);
 		assert.match(await readFile(ctx.summary, 'utf8'), /Use it on Prototir\]\(https:\/\/prototir\.test\/dashboard\/mine\/edit#builds\)/);
+	} finally {
+		fake.server.close();
+		await rm(root, { recursive: true, force: true });
+	}
+});
+
+test('outside CI an upload with PROTOTIR_TOKEN is registered as the command line', async () => {
+	const fake = await fakePrototir();
+	const root = await webBuild();
+	try {
+		const result = await run(['publish', join(root, 'build'), '--slug', 'mine', '--no-open'], {
+			PROTOTIR_TOKEN: TOKEN,
+			PROTOTIR_API: fake.api,
+			PROTOTIR_SITE: 'https://prototir.test',
+			PROTOTIR_HOME: join(root, 'home'),
+		});
+
+		assert.equal(result.code, 0, result.stderr);
+		assert.equal(fake.seen.registered.engine, 'cli');
 	} finally {
 		fake.server.close();
 		await rm(root, { recursive: true, force: true });

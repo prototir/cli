@@ -26,6 +26,17 @@ function trimSlash(url) {
 	return String(url).trim().replace(/\/+$/, '');
 }
 
+/** A token handed in by CI (a repository secret), or null. It wins over any saved link. */
+export function envToken(env = process.env) {
+	const token = env.PROTOTIR_TOKEN?.trim();
+	return token ? token : null;
+}
+
+/** CI sets CI=true (GitHub Actions, GitLab, CircleCI and others): nobody is there to approve a code. */
+export function isCi(env = process.env) {
+	return env.CI === 'true' || env.CI === '1' || env.GITHUB_ACTIONS === 'true';
+}
+
 export function credentialsPath() {
 	return join(process.env.PROTOTIR_HOME ?? join(homedir(), '.prototir'), 'credentials.json');
 }

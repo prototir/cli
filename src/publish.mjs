@@ -2,7 +2,7 @@
 import { hostname } from 'node:os';
 import { startLink, waitForLink, whoami, uploadBuild, PrototirError } from './api.mjs';
 import { prepareBuild } from './build.mjs';
-import { loadLink, saveLink } from './config.mjs';
+import { envToken, loadLink, saveLink } from './config.mjs';
 
 export const PLATFORMS = ['windows', 'macos', 'linux'];
 export const ARCHITECTURES = ['x64', 'arm64', 'universal'];
@@ -12,8 +12,23 @@ export function linkLabel(client) {
 	return `${client ?? 'Command line'} on ${hostname()}`.slice(0, 120);
 }
 
-/** The saved link if Prototir still accepts it, else null (and a dead link is never reused). */
+/**
+ * The link to upload with: PROTOTIR_TOKEN when set, else the saved link if Prototir still accepts
+ * it, else null (and a dead link is never reused). A refused PROTOTIR_TOKEN throws instead of
+ * returning null: in CI, falling back to a code nobody will approve would hang the job.
+ */
 export async function currentLink(api) {
+	const fromEnv = envToken();
+	if (fromEnv) {
+		const me = await whoami(api, fromEnv);
+		if (!me)
+			throw new PrototirError(
+				'Prototir refused PROTOTIR_TOKEN: it expired or was unlinked. Create a new one with ' +
+					'`npx @prototir/cli token` and update the secret.',
+				401,
+			);
+		return { token: fromEnv, displayName: me.displayName, fromEnv: true };
+	}
 	const link = await loadLink(api);
 	if (!link) return null;
 	const me = await whoami(api, link.token);
@@ -24,13 +39,18 @@ export async function currentLink(api) {
  * Links this computer: shows the code through onCode({ code, verificationUrl }), waits for the
  * creator to approve it, and saves the token.
  */
-export async function link(api, { label, onCode, onWait } = {}) {
+export async function link(api, { label, onCode, onWait, save = true } = {}) {
 	const start = await startLink(api, label ?? linkLabel());
 	onCode?.(start);
 	const approved = await waitForLink(api, start, { onWait });
 	const saved = { token: approved.token, displayName: approved.displayName, linkedAt: new Date().toISOString() };
-	await saveLink(api, saved);
+	if (save) await saveLink(api, saved);
 	return saved;
+}
+
+/** What the approval page shows for a CI token, so it is told apart from this computer's link. */
+export function ciTokenLabel() {
+	return `CI token (created on ${hostname()})`.slice(0, 120);
 }
 
 /** Where the creator finishes: the prototype's builds in Studio, or the upload page for a new one. */

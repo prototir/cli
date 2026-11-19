@@ -1,0 +1,83 @@
+name: Publish to Prototir
+description: Upload a web or native build to Prototir. It waits in your Studio until you choose to use it.
+author: Prototir
+branding:
+  icon: upload-cloud
+  color: blue
+
+inputs:
+  path:
+    description: Build folder or ZIP. A web build has index.html at its top.
+    required: true
+  token:
+    description: Upload token from `npx @prototir/cli token`, kept in a repository secret.
+    required: true
+  slug:
+    description: Existing prototype to add the build to (prototir.com/p/<slug>). Without it the build waits on the upload page.
+    required: false
+    default: ""
+  title:
+    description: Title to start a new prototype with, when there is no slug.
+    required: false
+    default: ""
+  version:
+    description: Version label shown in Studio, up to 40 characters.
+    required: false
+    default: ""
+  native:
+    description: "'true' for a downloadable build instead of a web build."
+    required: false
+    default: "false"
+  platform:
+    description: "Native builds only: windows, macos or linux."
+    required: false
+    default: ""
+  architecture:
+    description: "Native builds only: x64, arm64 or universal."
+    required: false
+    default: ""
+  api:
+    description: Prototir API to use. Leave empty for prototir.com.
+    required: false
+    default: ""
+
+outputs:
+  url:
+    description: Where to finish on Prototir.
+    value: ${{ steps.publish.outputs.url }}
+  for-prototype:
+    description: "'true' when the build was filed under the given slug."
+    value: ${{ steps.publish.outputs.for-prototype }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install the Prototir CLI
+      shell: bash
+      run: npm ci --omit=dev --no-audit --no-fund --loglevel=error --prefix "$GITHUB_ACTION_PATH"
+
+    - name: Upload the build
+      id: publish
+      shell: bash
+      # Inputs travel as environment variables, never spliced into the script, so a crafted
+      # title or slug cannot run commands.
+      env:
+        PROTOTIR_TOKEN: ${{ inputs.token }}
+        PROTOTIR_API: ${{ inputs.api }}
+        INPUT_PATH: ${{ inputs.path }}
+        INPUT_SLUG: ${{ inputs.slug }}
+        INPUT_TITLE: ${{ inputs.title }}
+        INPUT_VERSION: ${{ inputs.version }}
+        INPUT_NATIVE: ${{ inputs.native }}
+        INPUT_PLATFORM: ${{ inputs.platform }}
+        INPUT_ARCHITECTURE: ${{ inputs.architecture }}
+      run: |
+        [[ -n "$PROTOTIR_API" ]] || unset PROTOTIR_API
+        args=(publish "$INPUT_PATH" --no-open)
+        [[ -n "$INPUT_SLUG" ]] && args+=(--slug "$INPUT_SLUG")
+        [[ -n "$INPUT_TITLE" ]] && args+=(--title "$INPUT_TITLE")
+        [[ -n "$INPUT_VERSION" ]] && args+=(--version "$INPUT_VERSION")
+        if [[ "$INPUT_NATIVE" == "true" ]]; then
+          args+=(--native --platform "$INPUT_PLATFORM" --arch "$INPUT_ARCHITECTURE")
+        fi
+        node "$GITHUB_ACTION_PATH/bin/prototir.mjs" "${args[@]}"

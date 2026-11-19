@@ -42,6 +42,37 @@ claude mcp add prototir -- npx -y @prototir/cli mcp
 
 The server offers `prototir_publish`, `prototir_link`, `prototir_whoami` and `prototir_unlink`.
 
+## From CI (GitHub Actions)
+
+Prototir does not build your project: build it in your own pipeline, then hand the result over.
+On your computer, create a token for CI and save it as a repository secret named `PROTOTIR_TOKEN`:
+
+```sh
+npx @prototir/cli token
+```
+
+It is a separate link you approve like any other. It can only upload builds that wait for you on
+Prototir, it expires after 90 days, and you can unlink it from your account settings without
+unlinking your computer. Then add a step after your build:
+
+```yaml
+- uses: prototir/cli@v0
+  with:
+    path: build/WebGL/WebGL # the folder or ZIP your build produced
+    token: ${{ secrets.PROTOTIR_TOKEN }}
+    slug: your-prototype-slug # from prototir.com/p/<slug>; leave out to start a new prototype
+    version: build ${{ github.run_number }}
+```
+
+The build appears in Studio for that prototype, and the job summary links to it. Nothing is
+published until you choose it there. Inputs: `path`, `token`, `slug`, `title`, `version`, and
+`native: 'true'` with `platform` and `architecture` for a downloadable build. Outputs: `url` and
+`for-prototype`.
+
+[`examples/unity-gameci.yml`](examples/unity-gameci.yml) is a complete workflow for Unity with
+[GameCI](https://game.ci). Any other CI works the same way: set `PROTOTIR_TOKEN` and run
+`npx @prototir/cli publish <build> --slug <slug>`.
+
 ## Commands
 
 Run them with `npx @prototir/cli <command>`, or install it (`npm i -g @prototir/cli`) and use
@@ -53,6 +84,7 @@ Run them with `npx @prototir/cli <command>`, or install it (`npm i -g @prototir/
 | `prototir link` | Link this computer to your account |
 | `prototir whoami` | Show which account this computer is linked to |
 | `prototir unlink` | Forget this computer's link |
+| `prototir token` | Create an upload token for CI, printed for you to save as a secret |
 | `prototir mcp` | Run as an MCP server |
 
 Publish options:

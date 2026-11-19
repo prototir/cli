@@ -3,9 +3,9 @@
 // so an AI assistant can do it for you.
 import { parseArgs } from 'node:util';
 import { spawn } from 'node:child_process';
-import { servers } from '../src/config.mjs';
-import { forgetLink } from '../src/config.mjs';
-import { currentLink, link, publish, linkLabel, size, PLATFORMS, ARCHITECTURES } from '../src/publish.mjs';
+import { servers, forgetLink, isCi } from '../src/config.mjs';
+import { currentLink, link, publish, linkLabel, ciTokenLabel, size, PLATFORMS, ARCHITECTURES } from '../src/publish.mjs';
+import { reportToGitHub, errorAnnotation } from '../src/github.mjs';
 
 const HELP = `prototir: publish what you (or your AI) built to Prototir
 
@@ -14,6 +14,7 @@ Usage
   npx @prototir/cli link                        Link this computer to your Prototir account
   npx @prototir/cli whoami                      Show which account this computer is linked to
   npx @prototir/cli unlink                      Forget this computer's link
+  npx @prototir/cli token                       Create an upload token for CI (GitHub Actions)
   npx @prototir/cli mcp                         Run as an MCP server for AI assistants
 
 Publish options
@@ -28,6 +29,8 @@ Publish options
 Other options
   --api <url>           Prototir API (default https://api.prototir.com/api, or PROTOTIR_API)
   --site <url>          Prototir website (default https://prototir.com, or PROTOTIR_SITE)
+
+In CI, set PROTOTIR_TOKEN to a token from \`npx @prototir/cli token\` (keep it in a secret).
 
 A web build is a folder (or ZIP) with index.html at its top. Given a project folder, publish uses
 its dist/, build/ or out/ folder when that is where index.html is. Nothing is made public: the
@@ -52,7 +55,8 @@ const { values, positionals } = parseArgs({
 
 const [command = 'help', target] = positionals;
 const where = servers(values);
-const shouldOpen = values.open && !values['no-open'];
+const ci = isCi();
+const shouldOpen = values.open && !values['no-open'] && !ci;
 
 try {
 	switch (values.help ? 'help' : command) {
@@ -61,6 +65,9 @@ try {
 			break;
 		case 'link':
 			await ensureLinked({ force: true });
+			break;
+		case 'token':
+			await runToken();
 			break;
 		case 'whoami': {
 			const linked = await currentLink(where.api);
@@ -80,6 +87,8 @@ try {
 	}
 } catch (error) {
 	console.error(`\n${error.message}`);
+	const annotated = errorAnnotation(error.message);
+	if (annotated) console.log(annotated);
 	process.exitCode = 1;
 }
 
@@ -88,6 +97,12 @@ async function ensureLinked({ force = false } = {}) {
 		const linked = await currentLink(where.api);
 		if (linked) return linked;
 	}
+	// Nobody is at a CI runner to approve a code, so waiting for one would only hang the job.
+	if (ci)
+		throw new Error(
+			'No Prototir token. Set PROTOTIR_TOKEN to a token from `npx @prototir/cli token`, ' +
+				'run on your own computer and saved as a secret.',
+		);
 	const saved = await link(where.api, {
 		label: linkLabel(),
 		onCode: ({ code, verificationUrl }) => {
@@ -117,11 +132,39 @@ async function runPublish(input) {
 		},
 		{
 			onStage: (stage) => console.log(stage),
-			onProgress: (sent, total) => process.stdout.write(`\r  ${size(sent)} of ${size(total)}`),
+			// A carriage-return progress line is one unreadable wall of text in a CI log.
+			onProgress: process.stdout.isTTY
+				? (sent, total) => process.stdout.write(`\r  ${size(sent)} of ${size(total)}`)
+				: undefined,
 		},
 	);
 	console.log(`\n\nUploaded from ${result.root}. Finish publishing here:\n\n  ${result.url}\n`);
+	for (const line of await reportToGitHub(result, { requestedSlug: values.slug })) console.log(line);
 	if (shouldOpen) openBrowser(result.url);
+}
+
+/**
+ * A token for CI: its own link, approved like any other and revocable on its own, so unlinking it
+ * never unlinks this computer. It is printed, not saved here: it belongs in the CI's secrets.
+ */
+async function runToken() {
+	if (ci) throw new Error('Run `npx @prototir/cli token` on your own computer, not in CI.');
+	const created = await link(where.api, {
+		label: ciTokenLabel(),
+		save: false,
+		onCode: ({ code, verificationUrl }) => {
+			console.log(`\nTo create a CI token for your Prototir account, approve this code:\n\n    ${code}\n\n  ${verificationUrl}\n`);
+			if (shouldOpen) openBrowser(verificationUrl);
+			process.stdout.write('Waiting for approval');
+		},
+		onWait: () => process.stdout.write('.'),
+	});
+	console.log(
+		`\nToken for ${created.displayName}:\n\n${created.token}\n\n` +
+			'Save it as a repository secret named PROTOTIR_TOKEN. It can only upload builds that wait for\n' +
+			'you on Prototir; it cannot publish or change anything. It expires after 90 days, and you can\n' +
+			'unlink it any time from your account settings.',
+	);
 }
 
 /** Best effort: on a machine with no browser the link is printed anyway. */

@@ -1,0 +1,49 @@
+# Build a Unity Web player with GameCI and send it to Prototir.
+#
+# Copy to .github/workflows/prototir.yml in your Unity project's repository. The build runs on
+# your GitHub Actions minutes (free on public repositories) with your Unity license; Prototir
+# only receives the result, which waits in your Studio until you choose to use it.
+#
+# Repository secrets (Settings > Secrets and variables > Actions):
+#   UNITY_LICENSE, UNITY_EMAIL, UNITY_PASSWORD  see https://game.ci/docs/github/activation
+#   PROTOTIR_TOKEN                              run `npx @prototir/cli token` on your computer
+#
+# Replace your-prototype-slug with the slug from prototir.com/p/<slug>. Leave `slug` out to start
+# a new prototype instead.
+
+name: Build and send to Prototir
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      # Without this every run reimports the whole project, which is most of a cold build.
+      - uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-WebGL-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: Library-WebGL-
+
+      - uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          targetPlatform: WebGL
+
+      - uses: prototir/cli@v0
+        with:
+          path: build/WebGL/WebGL
+          token: ${{ secrets.PROTOTIR_TOKEN }}
+          slug: your-prototype-slug
+          version: build ${{ github.run_number }}
